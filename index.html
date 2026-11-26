@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<title>Chart Ndrean</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0f17'/%3E%3Cpath d='M6 22l6-7 5 4 9-11' stroke='%2322d3a6' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#182033;--line:#243049;--text:#e6ebf5;--muted:#8a96ad;--accent:#22d3a6;--up:#22c58b;--down:#f0506e;--warn:#f5b84a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+#symBtn{display:flex;flex-direction:column;align-items:flex-start;background:none;border:0;color:var(--text);padding:4px 6px;border-radius:10px;min-height:44px;cursor:pointer}
+#symName{font-weight:700;font-size:17px;letter-spacing:.2px}
+#symSub{font-size:11px;color:var(--muted)}
+#priceBox{margin-left:auto;text-align:right}
+#lastPrice{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+#chg{font-size:12px;font-variant-numeric:tabular-nums}
+#status{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+#status.live{background:var(--up);box-shadow:0 0 8px var(--up)}
+#status.poll{background:var(--warn)}
+.bar{display:flex;gap:6px;padding:6px 8px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar::-webkit-scrollbar{display:none}
+.chip{flex:none;min-width:48px;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer}
+.chip.on{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+#chartWrap{position:relative;flex:1;min-height:0}
+#chart,#rsi{position:absolute;left:0;right:0}
+#chart{top:0}
+#overlay{position:absolute;left:0;top:0;pointer-events:none;z-index:5}
+#overlay.active{pointer-events:auto;touch-action:none}
+#hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(18,24,38,.92);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:999px;font-size:13px;display:none;white-space:nowrap}
+#legend{position:absolute;left:10px;top:8px;z-index:4;font-size:12px;color:var(--muted);pointer-events:none;line-height:1.5}
+#legend b{color:var(--text);font-weight:600}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);z-index:3;font-size:14px}
+.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
+.tool{min-height:54px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.tool svg{width:22px;height:22px}
+.tool.on{border-color:var(--accent);color:var(--accent);background:rgba(34,211,166,.08)}
+.tool.danger{color:#ff8fa3}
+dialog{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:16px;padding:0;width:min(92vw,420px)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.dlg-h{padding:14px 16px;font-weight:700;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.dlg-b{padding:14px 16px}
+.x{background:none;border:0;color:var(--muted);font-size:22px;min-width:44px;min-height:44px;cursor:pointer}
+#search{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:0 14px;font-size:16px;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sym{min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:700;font-size:15px;cursor:pointer;text-align:left;padding:0 14px}
+.sym small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+.btn{min-height:46px;border-radius:12px;border:0;background:var(--accent);color:var(--bg);font-weight:700;font-size:15px;padding:0 16px;cursor:pointer;width:100%;margin-top:10px}
+.err{color:#ff8fa3;font-size:13px;margin-top:8px;min-height:18px}
+.ind{display:flex;align-items:center;justify-content:space-between;min-height:52px;border-bottom:1px solid var(--line);font-size:15px}
+.ind:last-child{border-bottom:0}
+.sw{width:52px;height:30px;border-radius:999px;background:var(--line);position:relative;border:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.15s}
+.sw.on{background:var(--accent)}.sw.on::after{left:25px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
+.note a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span id="status" title="Status data"></span>
+    <button id="symBtn" aria-label="Ganti koin"><span id="symName">BTC/USDT</span><span id="symSub">Ketuk buat ganti koin ▾</span></button>
+    <div id="priceBox"><div id="lastPrice">—</div><div id="chg">—</div></div>
+  </header>
+  <div class="bar" id="tfBar"></div>
+  <div id="chartWrap">
+    <div id="loading">Memuat chart…</div>
+    <div id="chart"></div>
+    <div id="rsi"></div>
+    <canvas id="overlay"></canvas>
+    <div id="legend"></div>
+    <div id="hint"></div>
+  </div>
+  <div class="tools">
+    <button class="tool" id="tHline" data-tool="hline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>Garis S/R</button>
+    <button class="tool" id="tTrend" data-tool="trend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="19" x2="20" y2="5"/><circle cx="4" cy="19" r="2.5" fill="currentColor"/><circle cx="20" cy="5" r="2.5" fill="currentColor"/></svg>Tren</button>
+    <button class="tool" id="tDel" data-tool="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Hapus 1</button>
+    <button class="tool danger" id="tClear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>Hapus semua</button>
+    <button class="tool" id="tInd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c3-6 5-6 7-2s4 4 7-4 4-4 4-4"/></svg>Indikator</button>
+  </div>
+</div>
+
+<dialog id="dlgSym">
+  <div class="dlg-h">Pilih koin<button class="x" data-close>×</button></div>
+  <div class="dlg-b">
+    <input id="search" placeholder="Cari koin, contoh: DOGE" autocomplete="off" autocapitalize="characters" enterkeyhint="search">
+    <button class="btn" id="searchGo">Buka chart</button>
+    <div class="err" id="searchErr"></div>
+    <div class="grid" id="symGrid"></div>
+  </div>
+</dialog>
+
+<dialog id="dlgInd">
+  <div class="dlg-h">Indikator<button class="x" data-close>×</button></div>
+  <div class="dlg-b">
+    <div class="ind"><span><span class="dot" style="background:#f5b84a"></span>MA 20</span><button class="sw" data-ind="ma"></button></div>
+    <div class="ind"><span><span class="dot" style="background:#7c9cff"></span>EMA 50</span><button class="sw" data-ind="ema"></button></div>
+    <div class="ind"><span><span class="dot" style="background:#c084fc"></span>RSI 14</span><button class="sw" data-ind="rsi"></button></div>
+    <div class="note">Data: Binance (cadangan OKX). Chart pakai <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a> (Apache-2.0). Bukan saran keuangan.</div>
+  </div>
+</dialog>
+
+<script src="lightweight-charts.standalone.production.js"></script>
+<script>
+(() => {
+"use strict";
+const LWC = window.LightweightCharts;
+const $ = s => document.querySelector(s);
+const PRESETS = [
+  {s:"BTCUSDT",n:"Bitcoin"},{s:"ETHUSDT",n:"Ethereum"},{s:"SOLUSDT",n:"Solana"},
+  {s:"BNBUSDT",n:"BNB"},{s:"XRPUSDT",n:"XRP"},{s:"PAXGUSDT",n:"Emas (PAXG)"}
+];
+const TFS = [
+  {k:"1m",l:"1m",okx:"1m",sec:60},{k:"5m",l:"5m",okx:"5m",sec:300},{k:"15m",l:"15m",okx:"15m",sec:900},
+  {k:"1h",l:"1j",okx:"1H",sec:3600},{k:"4h",l:"4j",okx:"4H",sec:14400},{k:"1d",l:"1D",okx:"1Dutc",sec:86400}
+];
+const BINANCE = ["https://api.binance.com","https://data-api.binance.vision"];
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const state = {
+  sym: store.get("cx.sym","BTCUSDT"),
+  tf: store.get("cx.tf","1h"),
+  ind: store.get("cx.ind",{ma:true,ema:false,rsi:false}),
+  tool: null, pending: null, bars: [], src: null, ws: null, poll: null, loadId: 0
+};
+const isTest = /[?&]test=1/.test(location.search);
+
+// ---------- charts ----------
+const theme = {
+  layout:{background:{type:"solid",color:"#0b0f17"},textColor:"#8a96ad",fontSize:12,fontFamily:"system-ui,-apple-system,Roboto,sans-serif"},
+  grid:{vertLines:{color:"rgba(36,48,73,.45)"},horzLines:{color:"rgba(36,48,73,.45)"}},
+  rightPriceScale:{borderColor:"#243049",minimumWidth:84},
+  timeScale:{borderColor:"#243049",timeVisible:true,secondsVisible:false,rightOffset:6},
+  crosshair:{mode:LWC.CrosshairMode.Normal,vertLine:{color:"#4b5a78",labelBackgroundColor:"#243049"},horzLine:{color:"#4b5a78",labelBackgroundColor:"#243049"}},
+  localization:{locale:"id-ID",timeFormatter:t=>fmtTime(t)}
+};
+const chartEl = $("#chart"), rsiEl = $("#rsi"), wrap = $("#chartWrap");
+const chart = LWC.createChart(chartEl, theme);
+const candles = chart.addCandlestickSeries({upColor:"#22c58b",downColor:"#f0506e",borderUpColor:"#22c58b",borderDownColor:"#f0506e",wickUpColor:"#22c58b",wickDownColor:"#f0506e"});
+const vol = chart.addHistogramSeries({priceScaleId:"vol",priceFormat:{type:"volume"},lastValueVisible:false,priceLineVisible:false});
+chart.priceScale("vol").applyOptions({scaleMargins:{top:.82,bottom:0}});
+candles.priceScale().applyOptions({scaleMargins:{top:.08,bottom:.2}});
+const maS = chart.addLineSeries({color:"#f5b84a",lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+const emaS = chart.addLineSeries({color:"#7c9cff",lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+const rsiChart = LWC.createChart(rsiEl, {...theme, timeScale:{...theme.timeScale,visible:false}, rightPriceScale:{borderColor:"#243049",minimumWidth:84,scaleMargins:{top:.1,bottom:.1}}, layout:{...theme.layout, attributionLogo:false}});
+const rsiS = rsiChart.addLineSeries({color:"#c084fc",lineWidth:2,priceLineVisible:false,crosshairMarkerVisible:false});
+[70,30].forEach(v=>rsiS.createPriceLine({price:v,color:"rgba(138,150,173,.5)",lineWidth:1,lineStyle:LWC.LineStyle.Dashed,axisLabelVisible:false}));
+
+let syncing=false;
+chart.timeScale().subscribeVisibleLogicalRangeChange(r=>{ if(syncing||!r||!state.ind.rsi) return; syncing=true; rsiChart.timeScale().setVisibleLogicalRange(r); syncing=false; drawOverlay(); });
+rsiChart.timeScale().subscribeVisibleLogicalRangeChange(r=>{ if(syncing||!r) return; syncing=true; chart.timeScale().setVisibleLogicalRange(r); syncing=false; drawOverlay(); });
+chart.timeScale().subscribeVisibleLogicalRangeChange(()=>drawOverlay());
+
+function layout(){
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const rh = state.ind.rsi ? Math.round(h*0.24) : 0;
+  chartEl.style.height = (h-rh)+"px"; rsiEl.style.top=(h-rh)+"px"; rsiEl.style.height=rh+"px";
+  rsiEl.style.display = rh? "block":"none";
+  chart.resize(w, h-rh); if(rh) rsiChart.resize(w, rh);
+  const c = $("#overlay"), dpr = window.devicePixelRatio||1;
+  c.width = w*dpr; c.height = (h-rh)*dpr; c.style.width=w+"px"; c.style.height=(h-rh)+"px";
+  drawOverlay();
+}
+window.addEventListener("resize", layout);
+new ResizeObserver(layout).observe(wrap);
+
+// ---------- helpers ----------
+function fmtTime(t){
+  const d = new Date(t*1000), p=n=>String(n).padStart(2,"0");
+  const tf = TFS.find(x=>x.k===state.tf);
+  if(tf && tf.sec>=86400) return `${p(d.getDate())}/${p(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)}`;
+  return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function decimals(p){ if(p>=1000) return 2; if(p>=1) return 3; if(p>=0.01) return 5; return 8; }
+function fmtPrice(p){ if(p==null||isNaN(p)) return "—"; return p.toLocaleString("id-ID",{minimumFractionDigits:decimals(p),maximumFractionDigits:decimals(p)}); }
+function base(sym){ return sym.replace(/USDT$/,""); }
+function tfObj(){ return TFS.find(x=>x.k===state.tf)||TFS[3]; }
+
+// ---------- data ----------
+async function fetchJSON(url, ms=8000){
+  const ctl = new AbortController(); const t=setTimeout(()=>ctl.abort(),ms);
+  try{ const r = await fetch(url,{signal:ctl.signal}); if(!r.ok) throw new Error("HTTP "+r.status); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+async function loadBinance(sym, tf){
+  let lastErr;
+  for(const host of BINANCE){
+    try{
+      const d = await fetchJSON(`${host}/api/v3/klines?symbol=${sym}&interval=${tf.k}&limit=1000`);
+      if(!Array.isArray(d)||!d.length) throw new Error("kosong");
+      return {src:"binance", host, bars:d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}))};
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr;
+}
+async function loadOkx(sym, tf){
+  const inst = base(sym)+"-USDT";
+  let all=[], after="";
+  for(let i=0;i<4;i++){
+    const d = await fetchJSON(`https://www.okx.com/api/v5/market/history-candles?instId=${inst}&bar=${tf.okx}&limit=100${after?"&after="+after:""}`);
+    if(d.code!=="0"||!d.data) throw new Error(d.msg||"OKX error");
+    if(!d.data.length) break;
+    all = all.concat(d.data); after = d.data[d.data.length-1][0];
+    if(d.data.length<100) break;
+  }
+  if(!all.length) throw new Error("Koin tidak ditemukan");
+  const bars = all.map(k=>({time:Math.floor(+k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]})).sort((a,b)=>a.time-b.time);
+  return {src:"okx", bars: bars.filter((b,i)=>i===0||b.time!==bars[i-1].time)};
+}
+async function loadBars(sym, tf){
+  try{ return await loadBinance(sym, tf); }
+  catch(e){ return await loadOkx(sym, tf); }
+}
+
+function stopLive(){
+  if(state.ws){ state.ws.onclose=null; state.ws.onerror=null; try{state.ws.close()}catch(e){} state.ws=null; }
+  if(state.poll){ clearInterval(state.poll); state.poll=null; }
+}
+function setStatus(c){ const el=$("#status"); el.className=c||""; el.title = c==="live"?"Live (websocket)":c==="poll"?"Update tiap 5 detik":"Offline"; }
+function startLive(id){
+  stopLive();
+  const tf = tfObj(), sym = state.sym;
+  const startPoll = () => {
+    setStatus("poll");
+    state.poll = setInterval(async()=>{
+      if(id!==state.loadId) return;
+      try{
+        let k;
+        if(state.src==="binance"){
+          const d = await fetchJSON(`${state.host}/api/v3/klines?symbol=${sym}&interval=${tf.k}&limit=2`,5000);
+          k = d.map(x=>({time:Math.floor(x[0]/1000),open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
+        } else {
+          const d = await fetchJSON(`https://www.okx.com/api/v5/market/candles?instId=${base(sym)}-USDT&bar=${tf.okx}&limit=2`,5000);
+          k = d.data.map(x=>({time:Math.floor(+x[0]/1000),open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]})).reverse();
+        }
+        k.forEach(b=>applyBar(b));
+      }catch(e){}
+    }, 5000);
+  };
+  if(state.src!=="binance" || isTest){ startPoll(); return; }
+  let opened=false;
+  try{
+    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${sym.toLowerCase()}@kline_${tf.k}`);
+    state.ws = ws;
+    const to = setTimeout(()=>{ if(!opened){ try{ws.close()}catch(e){} } }, 6000);
+    ws.onopen = ()=>{ opened=true; clearTimeout(to); setStatus("live"); };
+    ws.onmessage = ev => { if(id!==state.loadId) return; const k=JSON.parse(ev.data).k; if(k) applyBar({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v}); };
+    ws.onerror = ()=>{};
+    ws.onclose = ()=>{ clearTimeout(to); if(id!==state.loadId) return; state.ws=null; startPoll(); };
+  }catch(e){ startPoll(); }
+}
+
+function applyBar(b){
+  const bars = state.bars, last = bars[bars.length-1];
+  if(!last) return;
+  if(b.time < last.time) return;
+  if(b.time === last.time) bars[bars.length-1]=b; else bars.push(b);
+  candles.update(b);
+  vol.update({time:b.time,value:b.volume,color:b.close>=b.open?"rgba(34,197,139,.35)":"rgba(240,80,110,.35)"});
+  updateIndicatorsTail();
+  updateHeader();
+}
+
+// ---------- indicators ----------
+function sma(bars,n){ const out=[]; let s=0; for(let i=0;i<bars.length;i++){ s+=bars[i].close; if(i>=n) s-=bars[i-n].close; if(i>=n-1) out.push({time:bars[i].time,value:s/n}); } return out; }
+function ema(bars,n){ const out=[]; const k=2/(n+1); let e=null; for(let i=0;i<bars.length;i++){ const c=bars[i].close; if(i<n-1){ continue; } if(e===null){ let s=0; for(let j=i-n+1;j<=i;j++) s+=bars[j].close; e=s/n; } else e=c*k+e*(1-k); out.push({time:bars[i].time,value:e}); } return out; }
+function rsi(bars,n){ const out=[]; let g=0,l=0; for(let i=1;i<bars.length;i++){ const d=bars[i].close-bars[i-1].close; const up=Math.max(d,0), dn=Math.max(-d,0); if(i<=n){ g+=up; l+=dn; if(i===n){ g/=n; l/=n; out.push({time:bars[i].time,value:l===0?100:100-100/(1+g/l)}); } } else { g=(g*(n-1)+up)/n; l=(l*(n-1)+dn)/n; out.push({time:bars[i].time,value:l===0?100:100-100/(1+g/l)}); } } return out; }
+function updateIndicators(){
+  maS.setData(state.ind.ma? sma(state.bars,20):[]);
+  emaS.setData(state.ind.ema? ema(state.bars,50):[]);
+  if(state.ind.rsi){ rsiS.setData(rsi(state.bars,14)); }
+  updateLegend();
+}
+function updateIndicatorsTail(){
+  const b=state.bars; const n=b.length;
+  if(state.ind.ma && n>=20){ const v=sma(b.slice(-20),20); if(v.length) maS.update(v[v.length-1]); }
+  if(state.ind.ema || state.ind.rsi){ updateIndicators(); return; }
+  updateLegend();
+}
+function updateLegend(){
+  const parts=[`<b>${base(state.sym)}/USDT · ${tfObj().l}</b>`];
+  const b=state.bars;
+  if(state.ind.ma){ const v=sma(b.slice(-20),20)[0]; parts.push(`<span style="color:#f5b84a">MA20 ${v?fmtPrice(v.value):"—"}</span>`); }
+  if(state.ind.ema){ const e=ema(b,50); parts.push(`<span style="color:#7c9cff">EMA50 ${e.length?fmtPrice(e[e.length-1].value):"—"}</span>`); }
+  if(state.ind.rsi){ const r=rsi(b,14); parts.push(`<span style="color:#c084fc">RSI14 ${r.length?r[r.length-1].value.toFixed(1):"—"}</span>`); }
+  $("#legend").innerHTML = parts.join("<br>");
+}
+function updateHeader(){
+  const b=state.bars; if(!b.length) return;
+  const last=b[b.length-1].close;
+  $("#lastPrice").textContent = fmtPrice(last);
+  // 24h change approx
+  const cutoff = b[b.length-1].time - 86400;
+  let ref = b[0].close; for(let i=b.length-1;i>=0;i--){ if(b[i].time<=cutoff){ ref=b[i].close; break; } }
+  const pct = (last-ref)/ref*100;
+  const el=$("#chg"); el.textContent = `${pct>=0?"+":""}${pct.toFixed(2)}% ${tfObj().sec>=86400?"":"24j"}`.trim();
+  el.style.color = pct>=0? "var(--up)":"var(--down)";
+  document.title = `${fmtPrice(last)} ${base(state.sym)} · Chart`;
+}
+
+// ---------- load ----------
+async function load(sym, tf){
+  const id = ++state.loadId;
+  stopLive(); setStatus("");
+  $("#loading").style.display="flex"; $("#loading").textContent="Memuat chart…";
+  try{
+    const r = await loadBars(sym, TFS.find(x=>x.k===tf));
+    if(id!==state.loadId) return true;
+    state.sym=sym; state.tf=tf; state.src=r.src; state.host=r.host; state.bars=r.bars;
+    store.set("cx.sym",sym); store.set("cx.tf",tf);
+    const p = r.bars[r.bars.length-1].close, dec=decimals(p);
+    candles.applyOptions({priceFormat:{type:"price",precision:dec,minMove:1/Math.pow(10,dec)}});
+    candles.setData(r.bars);
+    vol.setData(r.bars.map(b=>({time:b.time,value:b.volume,color:b.close>=b.open?"rgba(34,197,139,.35)":"rgba(240,80,110,.35)"})));
+    updateIndicators();
+    const n=r.bars.length; chart.timeScale().setVisibleLogicalRange({from:Math.max(0,n-90),to:n+5});
+    renderTfBar(); $("#symName").textContent = base(sym)+"/USDT";
+    const pre = PRESETS.find(x=>x.s===sym); $("#symSub").textContent = (pre?pre.n+" · ":"") + (r.src==="okx"?"data OKX":"data Binance") + " ▾";
+    updateHeader(); renderDrawings(); $("#loading").style.display="none";
+    startLive(id);
+    return true;
+  }catch(e){
+    if(id!==state.loadId) return false;
+    $("#loading").textContent = "Gagal memuat data. Cek internet lalu coba lagi.";
+    if(state.bars.length){ $("#loading").style.display="none"; startLive(id); }
+    return false;
+  }
+}
+
+function renderTfBar(){
+  $("#tfBar").innerHTML = TFS.map(t=>`<button class="chip${t.k===state.tf?" on":""}" data-tf="${t.k}">${t.l}</button>`).join("");
+}
+$("#tfBar").addEventListener("click", e=>{ const b=e.target.closest("[data-tf]"); if(b && b.dataset.tf!==state.tf) load(state.sym,b.dataset.tf); });
+
+// ---------- drawings ----------
+const dKey = () => "cx.draw."+state.sym;
+let drawings = [];
+let priceLines = [];
+function loadDrawings(){ drawings = store.get(dKey(), []); }
+function saveDrawings(){ store.set(dKey(), drawings); }
+function renderDrawings(){
+  loadDrawings();
+  priceLines.forEach(pl=>candles.removePriceLine(pl)); priceLines=[];
+  drawings.filter(d=>d.type==="h").forEach(d=>{
+    priceLines.push(candles.createPriceLine({price:d.p,color:d.c||"#22d3a6",lineWidth:2,lineStyle:LWC.LineStyle.Solid,axisLabelVisible:true,title:""}));
+  });
+  drawOverlay();
+}
+// time <-> logical mapping (works across timeframes)
+function timeToLogical(t){
+  const b=state.bars, n=b.length; if(!n) return null;
+  const sec=tfObj().sec;
+  if(t<=b[0].time) return (t-b[0].time)/sec;
+  if(t>=b[n-1].time) return n-1+(t-b[n-1].time)/sec;
+  let lo=0,hi=n-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(b[m].time<=t) lo=m; else hi=m; }
+  return lo + (t-b[lo].time)/(b[hi].time-b[lo].time);
+}
+function logicalToTime(l){
+  const b=state.bars, n=b.length; if(!n) return null;
+  const sec=tfObj().sec;
+  if(l<=0) return b[0].time + l*sec;
+  if(l>=n-1) return b[n-1].time + (l-(n-1))*sec;
+  const i=Math.floor(l), f=l-i; return b[i].time + f*(b[i+1].time-b[i].time);
+}
+function toXY(t,p){
+  const l=timeToLogical(t); if(l==null) return null;
+  const x=chart.timeScale().logicalToCoordinate(l), y=candles.priceToCoordinate(p);
+  if(x==null||y==null) return null; return {x,y};
+}
+function fromXY(x,y){
+  const l=chart.timeScale().coordinateToLogical(x), p=candles.coordinateToPrice(y);
+  if(l==null||p==null) return null; return {t:logicalToTime(l), p};
+}
+function drawOverlay(){
+  const c=$("#overlay"); if(!c.width) return;
+  const ctx=c.getContext("2d"), dpr=window.devicePixelRatio||1;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,c.width,c.height);
+  const W=chart.timeScale().width();
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,c.height/dpr); ctx.clip();
+  const lines = drawings.filter(d=>d.type==="t");
+  const all = state.pending ? lines.concat([state.pending]) : lines;
+  all.forEach(d=>{
+    const a=toXY(d.t1,d.p1); if(!a) return;
+    ctx.lineCap="round";
+    if(d.t2==null){ dotAt(ctx,a.x,a.y,"#22d3a6"); return; }
+    const b=toXY(d.t2,d.p2); if(!b) return;
+    // extend to the right edge (ray) for usefulness
+    let ex=b.x, ey=b.y;
+    if(Math.abs(b.x-a.x)>0.5){ const k=(b.y-a.y)/(b.x-a.x); const dir=b.x>a.x?1:-1; ex = dir>0? W : 0; ey = a.y + k*(ex-a.x); }
+    ctx.strokeStyle = d.c||"#f5b84a"; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(ex,ey); ctx.stroke();
+    dotAt(ctx,a.x,a.y,d.c||"#f5b84a"); dotAt(ctx,b.x,b.y,d.c||"#f5b84a");
+  });
+  ctx.restore();
+}
+function dotAt(ctx,x,y,col){ ctx.fillStyle="#0b0f17"; ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
+
+function setTool(t){
+  state.tool = (state.tool===t)? null : t; state.pending=null;
+  document.querySelectorAll(".tool[data-tool]").forEach(b=>b.classList.toggle("on", b.dataset.tool===state.tool));
+  const ov=$("#overlay"); ov.classList.toggle("active", !!state.tool);
+  chart.applyOptions({handleScroll:!state.tool, handleScale:!state.tool});
+  const h=$("#hint");
+  const msg = HINTS[state.tool];
+  h.textContent = msg||""; h.style.display = msg? "block":"none";
+  drawOverlay();
+}
+document.querySelectorAll(".tool[data-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.tool)));
+$("#tClear").addEventListener("click",()=>{
+  loadDrawings(); if(!drawings.length){ flash("Belum ada gambar di "+base(state.sym)); return; }
+  if(confirm(`Hapus semua ${drawings.length} gambar di ${base(state.sym)}?`)){ drawings=[]; saveDrawings(); renderDrawings(); flash("Semua gambar dihapus"); }
+});
+const HINTS={hline:"Ketuk chart di harga yang mau ditandai", trend:"Ketuk titik pertama, lalu titik kedua", del:"Ketuk garis yang mau dihapus"};
+function flash(m){ const h=$("#hint"); h.textContent=m; h.style.display="block"; clearTimeout(flash._t); flash._t=setTimeout(()=>{ if(!state.tool) h.style.display="none"; else h.textContent=HINTS[state.tool]; },1600); }
+
+function overlayPoint(ev){ const r=$("#overlay").getBoundingClientRect(); const p=ev.changedTouches?ev.changedTouches[0]:ev; return {x:p.clientX-r.left, y:p.clientY-r.top}; }
+function handleTap(ev){
+  ev.preventDefault();
+  const {x,y}=overlayPoint(ev); const pt=fromXY(x,y); if(!pt) return;
+  if(state.tool==="hline"){
+    drawings.push({type:"h",p:+pt.p.toPrecision(10),c:"#22d3a6",id:Date.now()}); saveDrawings(); renderDrawings();
+    setTool(null); flash("Garis disimpan di "+fmtPrice(pt.p));
+  } else if(state.tool==="trend"){
+    if(!state.pending){ state.pending={type:"t",t1:pt.t,p1:pt.p}; drawOverlay(); $("#hint").textContent="Sekarang ketuk titik kedua"; }
+    else { const d={...state.pending,t2:pt.t,p2:pt.p,c:"#f5b84a",id:Date.now()}; state.pending=null; drawings.push(d); saveDrawings(); renderDrawings(); setTool(null); flash("Garis tren disimpan"); }
+  } else if(state.tool==="del"){
+    let best=null, bestD=24;
+    drawings.forEach((d,i)=>{
+      let dist=Infinity;
+      if(d.type==="h"){ const yy=candles.priceToCoordinate(d.p); if(yy!=null) dist=Math.abs(yy-y); }
+      else { const a=toXY(d.t1,d.p1), b=toXY(d.t2,d.p2); if(a&&b) dist=segDist(x,y,a,b); }
+      if(dist<bestD){ bestD=dist; best=i; }
+    });
+    if(best==null){ flash("Nggak ada garis di situ, ketuk lebih dekat"); return; }
+    drawings.splice(best,1); saveDrawings(); renderDrawings(); setTool(null); flash("Garis dihapus");
+  }
+}
+function segDist(px,py,a,b){
+  // distance to ray from a through b (matches drawn extension)
+  const dx=b.x-a.x, dy=b.y-a.y, L=dx*dx+dy*dy; if(!L) return Math.hypot(px-a.x,py-a.y);
+  let t=((px-a.x)*dx+(py-a.y)*dy)/L; t=Math.max(0,t); return Math.hypot(px-(a.x+t*dx), py-(a.y+t*dy));
+}
+const ov=$("#overlay");
+ov.addEventListener("touchend", handleTap, {passive:false});
+ov.addEventListener("mouseup", e=>{ if(!("ontouchstart" in window)) handleTap(e); });
+
+// ---------- dialogs ----------
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest("dialog").close()));
+document.querySelectorAll("dialog").forEach(d=>d.addEventListener("click",e=>{ if(e.target===d) d.close(); }));
+$("#symBtn").addEventListener("click",()=>{ $("#searchErr").textContent=""; $("#search").value=""; $("#dlgSym").showModal(); });
+$("#symGrid").innerHTML = PRESETS.map(p=>`<button class="sym" data-sym="${p.s}">${base(p.s)}<small>${p.n}</small></button>`).join("");
+$("#symGrid").addEventListener("click", async e=>{ const b=e.target.closest("[data-sym]"); if(!b) return; $("#dlgSym").close(); await load(b.dataset.sym, state.tf); });
+async function doSearch(){
+  let q=$("#search").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,""); if(!q) return;
+  if(q.endsWith("USDT")&&q.length>4) q=q.slice(0,-4);
+  $("#searchErr").textContent="Mencari…";
+  const ok = await load(q+"USDT", state.tf);
+  if(ok && state.sym===q+"USDT"){ $("#dlgSym").close(); }
+  else { $("#searchErr").textContent=`${q}/USDT nggak ketemu di Binance maupun OKX.`; if(state.bars.length){ $("#loading").style.display="none"; } }
+}
+$("#searchGo").addEventListener("click",doSearch);
+$("#search").addEventListener("keydown",e=>{ if(e.key==="Enter") doSearch(); });
+$("#tInd").addEventListener("click",()=>{ syncInd(); $("#dlgInd").showModal(); });
+function syncInd(){ document.querySelectorAll(".sw[data-ind]").forEach(s=>s.classList.toggle("on",!!state.ind[s.dataset.ind])); }
+document.querySelectorAll(".sw[data-ind]").forEach(s=>s.addEventListener("click",()=>{
+  const k=s.dataset.ind; state.ind[k]=!state.ind[k]; store.set("cx.ind",state.ind); syncInd(); updateIndicators(); layout();
+  if(k==="rsi"&&state.ind.rsi){ const r=chart.timeScale().getVisibleLogicalRange(); if(r) rsiChart.timeScale().setVisibleLogicalRange(r); }
+}));
+
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && !state.ws && !state.poll) startLive(state.loadId); });
+
+// test hook
+window.__cx = {state, chart, candles, fromXY, toXY, drawings:()=>store.get(dKey(),[])};
+renderTfBar(); layout(); load(state.sym, state.tf);
+})();
+</script>
+</body>
+</html>
