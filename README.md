@@ -1,15 +1,13 @@
 # Chart Ndrean
 
-Chart candle ringan buat HP, mirip TradingView versi simpel. Buka: https://ndrean7.github.io/chart-app/
+Chart ringan ala TradingView buat HP. Buka: https://ndrean7.github.io/chart-app/
 
-- Chart live dari data publik Binance (cadangan otomatis ke OKX)
-- Koin: BTC, ETH, SOL, BNB, XRP, Emas (PAXG), plus cari pair USDT apa saja
-- Timeframe 1m, 5m, 15m, 1j, 4j, 1D
-- Gambar garis S/R dan garis tren, tanpa batas, tersimpan di browser per koin
-- Indikator MA 20, EMA 50, RSI 14
+- **Pair:** Crypto (Binance, cadangan OKX, cari semua pair USDT), Forex, Saham AS & indeks, Komoditas (emas XAU/USD, perak, minyak).
+- **Alat gambar:** garis S/R, ray, tren, channel, vertikal, Fibonacci, kotak/zona, posisi Long/Short (R:R otomatis), ukur harga, teks, alert harga. Bisa pilih, geser, ganti warna/tebal, duplikat, hapus, undo. Magnet ke O/H/L/C.
+- **Indikator:** Volume, MA ×2, EMA ×2, Bollinger, VWAP, RSI, MACD, Stochastic (periode bisa diatur).
+- **Chart:** Candle, Heikin Ashi, Bar, Garis · layar penuh · simpan gambar.
 
-Gambar disimpan di browser HP masing-masing (localStorage). Hapus data browser = gambar ikut hilang.
+Sumber data (gratis, tanpa API key): Binance/OKX (crypto), Hyperliquid (harga perp yang ngikutin saham AS, forex, komoditas; jalan 24 jam, bisa beda dikit dari broker), Frankfurter/ECB (kurs harian).
+Gambar & alert disimpan di browser HP. Alert cuma jalan selama halaman terbuka.
 
-Alat bantu lihat chart saja, bukan saran keuangan.
-
-Chart memakai [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts) v4.2.3 (Apache-2.0, © TradingView, Inc.).
+Chart: [TradingView Lightweight Charts](https://www.tradingview.com/lightweight-charts/) (Apache-2.0). Bukan saran keuangan.
